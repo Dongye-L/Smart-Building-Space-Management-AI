@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.4.1/lib/p5.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            font-family: sans-serif;
+        }
+
+        h2 {
+            color: #fff;
+            margin-bottom: 15px;
+        }
+
+        #controls {
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #808080;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #666666;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Library Seat Flow Simulation (900x600)</h2>
+    <div id="canvas-holder"></div>
+    <div id="controls">
+        <button id="btn" onclick="startSimulation()">Start Simulation</button>
+    </div>
+
+    <script>
+        let seats = [];
+        let people = [];
+        let isRunning = false;
+        let stage = "READY";
+
+        let fullStartTime = 0;
+        let finalWaitTime = 0;
+        let nextActionFrame = 0;
+        let lostCount = 0;
+        let eveningStep = 0;
+
+        // 放大后的常量
+        const CW = 900;
+        const CH = 600;
+        const ENTRANCE = { x: 900, y: 300 }; // 入口位置按比例移动
+        const WAIT_TIME = 180;
+
+        function setup() {
+            let cnv = createCanvas(CW, CH);
+            cnv.parent('canvas-holder');
+            initSeats();
+        }
+
+        function initSeats() {
+            seats = [];
+            // 4个大区域，每个区域从 300x200 变为 450x300
+            for (let r = 0; r < 4; r++) {
+                let areaX = (r % 2) * (CW / 2);
+                let areaY = Math.floor(r / 2) * (CH / 2);
+
+                // 每个区域 3列 * 2行
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 2; j++) {
+                        seats.push({
+                            // 每个格子的间距从 100 变为 150
+                            x: areaX + (i + 0.5) * (CW / 6),
+                            y: areaY + (j + 0.5) * (CH / 4),
+                            occupied: false,
+                            areaId: r
+                        });
+                    }
+                }
+            }
+        }
+
+        function startSimulation() {
+            isRunning = true;
+            people = [];
+            lostCount = 0;
+            eveningStep = 0;
+            seats.forEach(s => s.occupied = false);
+            document.getElementById('btn').style.visibility = 'hidden';
+
+            for (let r = 0; r < 4; r++) {
+                spawnInArea(r);
+            }
+            nextActionFrame = frameCount + WAIT_TIME;
+            stage = "MORNING";
+        }
+
+        function draw() {
+            background(26);
+            fill(255); stroke(255); rect(0, 0, CW, CH);
+
+            // 比例缩放后的分区线
+            stroke(220); strokeWeight(1);
+            line(CW / 2, 0, CW / 2, CH);
+            line(0, CH / 2, CW, CH / 2);
+
+            // 四角红块 (尺寸也等比放大 1.5 倍)
+            fill(255, 0, 0); noStroke();
+            let sSize = 50; // 原本是 100/3 ≈ 33.3，现在放大到 50
+            rect(0, 0, sSize, sSize);
+            rect(CW - sSize, 0, sSize, sSize);
+            rect(0, CH - sSize, sSize, sSize);
+            rect(CW - sSize, CH - sSize, sSize, sSize);
+
+            if (isRunning) {
+                handleLogic();
+                for (let p of people) p.display();
+
+                fill(100); textAlign(CENTER); textSize(14);
+                text(`Stage: ${stage} | Occupancy: ${people.length}/24 | Left: ${lostCount}/15`, CW / 2, CH - 15);
+            }
+        }
+
+        function handleLogic() {
+            if (stage === "MORNING") {
+                if (frameCount >= nextActionFrame) {
+                    let free = seats.filter(s => !s.occupied);
+                    if (free.length > 0) {
+                        let batch = Math.min(floor(random(1, 4)), free.length);
+                        for (let i = 0; i < batch; i++) {
+                            let s = free[i];
+                            s.occupied = true;
+                            people.push(new Person(s));
+                        }
+                        nextActionFrame = frameCount + WAIT_TIME;
+                    } else {
+                        stage = "DAYTIME";
+                        fullStartTime = millis();
+                    }
+                }
+            }
+
+            if (stage === "DAYTIME") {
+                if (millis() - fullStartTime > 5000) {
+                    stage = "EVENING";
+                    nextActionFrame = frameCount + WAIT_TIME;
+                }
+            }
+
+            if (stage === "EVENING") {
+                if (frameCount >= nextActionFrame) {
+                    if (lostCount < 15) {
+                        eveningStep++;
+                        if (eveningStep === 1) {
+                            for (let r = 0; r < 4; r++) removeOneFromArea(r);
+                        } else {
+                            let area0People = people.filter(p => p.seat.areaId === 0);
+                            if (area0People.length > 0) {
+                                let toRemove = Math.min(area0People.length, 2);
+                                for (let i = 0; i < toRemove; i++) {
+                                    let p = people.filter(p => p.seat.areaId === 0)[0];
+                                    removePerson(p);
+                                }
+                            } else {
+                                let p = random(people);
+                                if (p) removePerson(p);
+                            }
+                        }
+                        nextActionFrame = frameCount + WAIT_TIME;
+                    } else {
+                        stage = "FINAL_STAY";
+                        finalWaitTime = millis();
+                    }
+                }
+            }
+
+            if (stage === "FINAL_STAY") {
+                if (millis() - finalWaitTime > 5000) {
+                    isRunning = false;
+                    stage = "DONE";
+                    document.getElementById('btn').style.visibility = 'visible';
+                }
+            }
+        }
+
+        function removeOneFromArea(areaId) {
+            let areaPeople = people.filter(p => p.seat.areaId === areaId);
+            if (areaPeople.length > 0) removePerson(areaPeople[0]);
+        }
+
+        function removePerson(p) {
+            if (!p) return;
+            p.seat.occupied = false;
+            let idx = people.indexOf(p);
+            if (idx > -1) {
+                people.splice(idx, 1);
+                lostCount++;
+            }
+        }
+
+        function spawnInArea(areaId) {
+            let areaSeats = seats.filter(s => s.areaId === areaId && !s.occupied);
+            if (areaSeats.length > 0) {
+                let count = Math.min(floor(random(1, 3)), areaSeats.length);
+                for (let i = 0; i < count; i++) {
+                    let s = areaSeats[i];
+                    s.occupied = true;
+                    people.push(new Person(s));
+                }
+            }
+        }
+
+        class Person {
+            constructor(seat) {
+                this.seat = seat;
+                this.x = seat.x;
+                this.y = seat.y;
+            }
+            display() {
+                fill(0, 102, 255); noStroke();
+                // 圆片大小也可以稍微调大一点点，从 20 变为 30 看起来更协调
+                ellipse(this.x, this.y, 30, 30);
+            }
+        }
+    </script>
+</body>
+
+</html>
