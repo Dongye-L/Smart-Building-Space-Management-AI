@@ -10,22 +10,26 @@
 ## System Architecture
 
 <p align="center">
-  <img src="demo/architecture.jpg" alt="EcoSight System Architecture" width="80%">
+  <img src="demo/architecture.jpg" alt="EcoSight System Architecture" width="40%">
 </p>
 
 The project operates as a closed-loop **Cyber-Physical System (CPS)**:
-1.  **Sense (Edge AI)**: Ceiling-mounted sensors capture top-down views. OpenCV algorithms execute head detection and track seat-level occupancy locally.
-2.  **Transfer**: Anonymous coordinate strings are transmitted via low-latency protocols (UDP/Serial).
-3.  **React (Digital Twin)**: A real-time dashboard in Rhino/Grasshopper visualizes data as "occupancy spheres" and automates building responses, such as switching zones to power-saving mode.
+1. **Sense (Edge AI)**: Ceiling-mounted sensors capture top-down views. OpenCV algorithms execute head detection and track seat-level occupancy locally.
+2. **Transfer**: Anonymous coordinate strings are transmitted via low-latency protocols such as UDP or Serial.
+3. **React (Digital Twin)**: A real-time dashboard in Rhino/Grasshopper visualizes data as "occupancy spheres" and automates building responses, such as switching zones to power-saving mode.
+
+## Project Demonstration
+
+<p align="center">
+  <img src="demo/demo.jpg" alt="EcoSight Project Demo" width="80%">
+</p>
 
 ## Technical Stack
 * **Computer Vision**: Python, OpenCV.
-* **Hardware**: Edge-AI modules (OpenMV / ESP32-CAM), Arduino MCU.
+* **Hardware**: Edge-AI modules (e.g., OpenMV, ESP32-CAM) and Arduino-based MCUs.
 * **Design & Simulation**: Rhino 7, Grasshopper (Digital Twin dashboard).
 
 ---
 
-
-
 ## Notice
-*This repository contains the conceptual framework and prototype documentation for the EcoSight project. Specific proprietary algorithms and detailed experimental datasets are currently restricted to protect project integrity during the pilot phase.*
+*This repository contains the conceptual framework and prototype documentation for the EcoSight project. Specific proprietary algorithms and detailed experimental datasets are currently restricted to protect project integrity during the development phase.*
