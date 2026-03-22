@@ -25,15 +25,7 @@ The project operates as a closed-loop **Cyber-Physical System (CPS)**:
 
 ---
 
-## Author
 
-<p align="center">
-  <img src="demo/demo.jpg" alt="Dongye Liu" width="150px" style="border-radius: 50%;">
-</p>
-
-**Dongye Liu** | MSc in Electronic and Information Engineering, The Hong Kong Polytechnic University.
-* Class 1 Registered Architect (PRC) & LEED AP.
-* Specializing in transforming static structures into Responsive Spatial Intelligence.
 
 ## Notice
 *This repository contains the conceptual framework and prototype documentation for the EcoSight project. Specific proprietary algorithms and detailed experimental datasets are currently restricted to protect project integrity during the pilot phase.*
